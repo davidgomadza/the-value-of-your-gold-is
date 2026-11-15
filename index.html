@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Oracle</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --panel-bg: #111111;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --accent-blue: #0088ff;
+            --accent-green: #00ff88;
+            --accent-gold: #ffd700;
+            --border-color: #222222;
+            --highlight-bg: rgba(0, 136, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--panel-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 255, 136, 0.1);
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 28px;
+            color: var(--text-main);
+            text-align: center;
+        }
+
+        h1 span {
+            color: var(--accent-green);
+        }
+
+        .description {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        .instruction-box {
+            background-color: var(--highlight-bg);
+            border-left: 4px solid var(--accent-blue);
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #ccc;
+        }
+
+        .instruction-box strong {
+            color: var(--accent-blue);
+        }
+
+        .image-container {
+            width: 100%;
+            min-height: 300px;
+            background-color: #000;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        #preview-image, #image-canvas {
+            max-width: 100%;
+            max-height: 500px;
+            display: none;
+        }
+
+        .placeholder-text {
+            color: var(--text-muted);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        button {
+            background-color: var(--accent-green);
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--accent-blue);
+            color: #fff;
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background-color: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        button.secondary:hover:not(:disabled) {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            background-color: transparent;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #1a1a1a;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            accent-color: var(--accent-green);
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        /* Sequential Reveal Styles */
+        .results-panel {
+            display: none;
+            background-color: #0a0a0a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .result-item {
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #151515;
+            border-left: 4px solid #333;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.5s ease;
+        }
+
+        .result-item.active {
+            opacity: 1;
+            transform: translateY(0);
+            border-left-color: var(--accent-blue);
+            background-color: var(--highlight-bg);
+            box-shadow: 0 0 15px rgba(0, 136, 255, 0.1);
+        }
+
+        .result-item.complete {
+            opacity: 1;
+            transform: translateY(0);
+            border-left-color: var(--accent-green);
+            background-color: #151515;
+        }
+
+        .result-item h4 {
+            margin: 0 0 5px 0;
+            color: var(--text-muted);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .result-item.active h4 {
+            color: var(--accent-blue);
+        }
+
+        .result-item.complete h4 {
+            color: var(--accent-green);
+        }
+
+        .result-item p {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        .result-item .sub-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: normal;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .crypto-text {
+            color: var(--accent-gold) !important;
+        }
+
+        .status-text {
+            text-align: center;
+            color: var(--accent-blue);
+            font-size: 14px;
+            margin-top: 15px;
+            font-style: italic;
+            min-height: 20px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Photo <span>Oracle</span></h1>
+    <p class="description">Upload a photo → trace the scan paths → hear what the image "says".</p>
+
+    <div class="instruction-box">
+        <strong>System Ready.</strong> The Oracle now scans Land, Real Estate, Bitcoin, Cryptocurrencies, and Real Gold. Uncheck the voice box to watch the silent sequential scan. The Oracle allocates exactly 9 seconds per task to ensure every question is answered in order without skipping.
+    </div>
+
+    <div class="image-container" id="drop-zone">
+        <span class="placeholder-text" id="placeholder-text">Click 'Upload Photo' to begin</span>
+        <img id="preview-image" alt="Uploaded Photo">
+        <canvas id="image-canvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <input type="file" id="file-input" accept="image/*" style="display: none;">
+        <button id="upload-btn">Upload Photo</button>
+        <button id="clear-btn" class="secondary">Clear</button>
+        <label class="checkbox-group">
+            <input type="checkbox" id="voice-toggle">
+            Voice
+        </label>
+        <label class="checkbox-group" style="border-color: var(--accent-blue);">
+            <input type="checkbox" id="agt-toggle">
+            AGT8000 mode
+        </label>
+    </div>
+
+    <div class="results-panel" id="results-panel">
+        <div class="results-grid">
+            <!-- Value -->
+            <div class="result-item" id="item-val">
+                <h4>1. What is the Value</h4>
+                <p id="val-result">Waiting...</p>
+            </div>
+            <!-- Age -->
+            <div class="result-item" id="item-age">
+                <h4>2. Age</h4>
+                <p id="age-result">Waiting...</p>
+            </div>
+            <!-- Advalue -->
+            <div class="result-item" id="item-adval">
+                <h4>3. Advalue (Total Assets)</h4>
+                <p id="adval-result">Waiting...</p>
+                <span class="sub-text" id="adval-breakdown"></span>
+            </div>
+            <!-- Birth -->
+            <div class="result-item" id="item-dob">
+                <h4>4. Day of Birth</h4>
+                <p id="dob-result">Waiting...</p>
+            </div>
+            <!-- Death at Birth -->
+            <div class="result-item" id="item-dod-birth">
+                <h4>5. Day of Death (At Birth)</h4>
+                <p id="dod-birth-result">Waiting...</p>
+            </div>
+            <!-- Current Death -->
+            <div class="result-item" id="item-dod-current">
+                <h4>6. Current Day of Death</h4>
+                <p id="dod-current-result">Waiting...</p>
+            </div>
+            <!-- Land & Real Estate -->
+            <div class="result-item" id="item-land">
+                <h4>7. Land & Real Estate (Bottom of Chin)</h4>
+                <p id="land-result" class="crypto-text">Waiting...</p>
+            </div>
+            <!-- Crypto -->
+            <div class="result-item" id="item-crypto">
+                <h4>8. Bitcoin, BITCOINAYT & Cryptocurrencies</h4>
+                <p id="crypto-result" class="crypto-text">Waiting...</p>
+                <span class="sub-text" id="crypto-breakdown"></span>
+            </div>
+            <!-- NEW: Real Gold -->
+            <div class="result-item" id="item-gold">
+                <h4>9. Real Gold Value (Across Both Lips)</h4>
+                <p id="gold-result" class="crypto-text">Waiting...</p>
+            </div>
+        </div>
+        <div class="status-text" id="status-text"></div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const uploadBtn = document.getElementById('upload-btn');
+        const fileInput = document.getElementById('file-input');
+        const previewImage = document.getElementById('preview-image');
+        const canvas = document.getElementById('image-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const clearBtn = document.getElementById('clear-btn');
+        const placeholderText = document.getElementById('placeholder-text');
+        const resultsPanel = document.getElementById('results-panel');
+        const voiceToggle = document.getElementById('voice-toggle');
+        const statusText = document.getElementById('status-text');
+
+        // Time constant for tasks (in milliseconds)
+        const TASK_TIME = 9000; 
+        let activeTimeouts = [];
+
+        // Handle Upload Button Click
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Handle File Selection
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                previewImage.src = event.target.result;
+                previewImage.style.display = 'block';
+                placeholderText.style.display = 'none';
+                canvas.style.display = 'none'; 
+                
+                previewImage.onload = () => {
+                    canvas.width = previewImage.naturalWidth;
+                    canvas.height = previewImage.naturalHeight;
+                    ctx.drawImage(previewImage, 0, 0);
+                    
+                    startOracleSequence();
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Handle Clear
+        clearBtn.addEventListener('click', () => {
+            clearAllTimeouts();
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            
+            fileInput.value = '';
+            previewImage.src = '';
+            previewImage.style.display = 'none';
+            canvas.style.display = 'none';
+            placeholderText.style.display = 'block';
+            resultsPanel.style.display = 'none';
+            
+            // Reset UI classes
+            document.querySelectorAll('.result-item').forEach(el => {
+                el.classList.remove('active', 'complete');
+                el.querySelector('p').innerText = 'Waiting...';
+            });
+            document.getElementById('adval-breakdown').innerText = '';
+            document.getElementById('crypto-breakdown').innerText = '';
+            statusText.innerText = '';
+        });
+
+        // Helper: Get pixel data
+        function getPixelValue(xPercent, yPercent) {
+            const x = Math.min(Math.max(Math.floor(xPercent * canvas.width), 0), canvas.width - 1);
+            const y = Math.min(Math.max(Math.floor(yPercent * canvas.height), 0), canvas.height - 1);
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            const brightness = (pixel[0] + pixel[1] + pixel[2]) / 3;
+            return (brightness / 255) * 100; 
+        }
+
+        function clearAllTimeouts() {
+            activeTimeouts.forEach(clearTimeout);
+            activeTimeouts = [];
+        }
+
+        // SPEECH HELPER
+        function speak(text) {
+            if (voiceToggle.checked && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.95;
+                utterance.pitch = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Main Sequence Logic
+        function startOracleSequence() {
+            clearAllTimeouts();
+            resultsPanel.style.display = 'block';
+            
+            // Calculate all values instantly internally
+            const data = calculateAllValues();
+
+            // Set up the sequence array
+            const sequence = [
+                { 
+                    id: 'item-val', 
+                    text: `Task 1. What is the value. The reading is ${data.value}.`, 
+                    update: () => document.getElementById('val-result').innerText = data.value 
+                },
+                { 
+                    id: 'item-age', 
+                    text: `Task 2. Age. The reading is ${data.age}.`, 
+                    update: () => document.getElementById('age-result').innerText = data.age 
+                },
+                { 
+                    id: 'item-adval', 
+                    text: `Task 3. Advalue. Total assets are ${data.adValue}.`, 
+                    update: () => {
+                        document.getElementById('adval-result').innerText = data.adValue;
+                        document.getElementById('adval-breakdown').innerText = data.breakdown;
+                    } 
+                },
+                { 
+                    id: 'item-dob', 
+                    text: `Task 4. Day of Birth. The reading is ${data.dob}.`, 
+                    update: () => document.getElementById('dob-result').innerText = data.dob 
+                },
+                { 
+                    id: 'item-dod-birth', 
+                    text: `Task 5. Day of death at birth. The reading is ${data.dodBirth}.`, 
+                    update: () => document.getElementById('dod-birth-result').innerText = data.dodBirth 
+                },
+                { 
+                    id: 'item-dod-current', 
+                    text: `Task 6. Current day of death. The reading is ${data.dodCurrent}.`, 
+                    update: () => document.getElementById('dod-current-result').innerText = data.dodCurrent 
+                },
+                { 
+                    id: 'item-land', 
+                    text: `Task 7. Land and real estate. The reading from the bottom of the chin is ${data.land}.`, 
+                    update: () => document.getElementById('land-result').innerText = data.land 
+                },
+                { 
+                    id: 'item-crypto', 
+                    text: `Task 8. Cryptocurrencies. Bitcoin and BITCOINAYT reading is ${data.cryptoTotal}. Breakdown: ${data.cryptoBreakdown}.`, 
+                    update: () => {
+                        document.getElementById('crypto-result').innerText = data.cryptoTotal;
+                        document.getElementById('crypto-breakdown').innerText = data.cryptoBreakdown;
+                    } 
+                },
+                { 
+                    id: 'item-gold', 
+                    text: `Task 9. Real gold value. Tracing from the real estate chin across both lips, the real gold value is ${data.realGold}.`, 
+                    update: () => document.getElementById('gold-result').innerText = data.realGold 
+                }
+            ];
+
+            // Reset UI
+            document.querySelectorAll('.result-item').forEach(el => {
+                el.classList.remove('active', 'complete');
+            });
+
+            // Execute Sequence sequentially
+            sequence.forEach((task, index) => {
+                const timeOffset = index * TASK_TIME;
+
+                // 1. Highlight and Read/Speak
+                const timeout1 = setTimeout(() => {
+                    // Set current active
+                    document.getElementById(task.id).classList.add('active');
+                    statusText.innerText = `Processing Task ${index + 1} of 9...`;
+                    
+                    // Update the text visually
+                    task.update();
+                    
+                    // Speak the result
+                    speak(task.text);
+                    
+                }, timeOffset);
+                
+                // 2. Mark as complete after the duration (but before next starts)
+                const timeout2 = setTimeout(() => {
+                    document.getElementById(task.id).classList.remove('active');
+                    document.getElementById(task.id).classList.add('complete');
+                }, timeOffset + TASK_TIME - 500); 
+
+                activeTimeouts.push(timeout1, timeout2);
+            });
+
+            // Final completion message
+            const finalTimeout = setTimeout(() => {
+                statusText.innerText = "All 9 tasks completed successfully. The Oracle is silent.";
+                speak("All tasks completed. The Oracle is silent.");
+            }, sequence.length * TASK_TIME);
+
+            activeTimeouts.push(finalTimeout);
+        }
+
+        // The Core Oracle Logic
+        function calculateAllValues() {
+            // 1. VALUE
+            const valTL = getPixelValue(0, 0);
+            const valBR = getPixelValue(1, 1);
+            const valTR = getPixelValue(1, 0);
+            const valBL = getPixelValue(0, 1);
+            const totalValue = (valTL + valBR + valTR + valBL) / 4;
+            const value = `$${(totalValue * 15.42).toFixed(2)}`;
+
+            // 2. AGE
+            const ageVal = 100 - totalValue;
+            const age = `${Math.floor(ageVal)} Years`;
+
+            // 3. ADValue
+            const chest = getPixelValue(0.5, 0.5);
+            const lipDebt = getPixelValue(0.5, 0.8);
+            const noseCash = getPixelValue(0.5, 0.45);
+            const goldLeft = getPixelValue(0.3, 0.25);
+            const goldRight = getPixelValue(0.7, 0.25);
+            const foreheadBank = getPixelValue(0.5, 0.15);
+            const earStocks = getPixelValue(0.1, 0.25);
+            const headTotal = getPixelValue(0.5, 0.05);
+            
+            const goldVouchers = goldLeft + goldRight;
+            const adValueTotal = (noseCash + goldVouchers + foreheadBank + earStocks + headTotal) - lipDebt;
+            
+            const adValue = `$${(adValueTotal * 100).toFixed(2)}`;
+            const breakdown = `Cash: $${(noseCash * 10).toFixed(0)} | Gold: $${(goldVouchers * 10).toFixed(0)} | Bank: $${(foreheadBank * 10).toFixed(0)} | Stocks: $${(earStocks * 10).toFixed(0)}`;
+
+            // 4. DOB
+            const dobBL = getPixelValue(0, 1);
+            const dobTR = getPixelValue(1, 0);
+            const dobTL = getPixelValue(0, 0);
+            const dobDay = (dobBL + dobTR) % 28 + 1;
+            const dobMonth = (dobTL + dobBL) % 12 + 1;
+            const dob = `${dobDay}/${dobMonth}`;
+
+            // 5. DOD BIRTH
+            const dodTR = getPixelValue(1, 0);
+            const dodBL = getPixelValue(0, 1);
+            const dodBR = getPixelValue(1, 1);
+            const dodBirthDay = (dodTR + dodBL + dodBR) % 28 + 1;
+            const dodBirthMonth = (dodBL + dodBR) % 12 + 1;
+            const dodBirth = `${dodBirthDay}/${dodBirthMonth}`;
+
+            // 6. DOD CURRENT
+            const currentDodDay = (dodBirthDay + dodBL) % 28 + 1;
+            const currentDodMonth = (dodBirthMonth + dodTR) % 12 + 1;
+            const isBirthday = (currentDodDay === dobDay && currentDodMonth === dobMonth);
+            const dodCurrent = `${currentDodDay}/${currentDodMonth} ${isBirthday ? '(Birthday)' : ''}`;
+
+            // 7. LAND & REAL ESTATE (Bottom of Chin)
+            const chinValue = getPixelValue(0.5, 0.85);
+            const landTotal = chinValue * 2500; 
+            const land = `$${landTotal.toFixed(2)}`;
+
+            // 8. CRYPTOCURRENCIES (Left Ear to Right Ear, then reverse)
+            const earLeft = getPixelValue(0.15, 0.3);  // Left top ear
+            const earRight = getPixelValue(0.85, 0.3); // Right top ear
+            
+            const btcValue = earLeft * 120; 
+            const bcaytValue = earRight * 500;
+            const altCoins = (earRight - earLeft) * 10;
+            
+            const cryptoTotalVal = btcValue + bcaytValue + Math.abs(altCoins);
+            
+            const cryptoTotal = `$${cryptoTotalVal.toFixed(2)}`;
+            const cryptoBreakdown = `BTC: $${btcValue.toFixed(0)} | BITCOINAYT: $${bcaytValue.toFixed(0)} | AltCoins: $${Math.abs(altCoins).toFixed(0)}`;
+
+            // 9. REAL GOLD (From Chin across both lips)
+            const chinCenter = getPixelValue(0.5, 0.85); // Real estate start
+            const lipLeft = getPixelValue(0.35, 0.8);    // Left lip
+            const lipRight = getPixelValue(0.65, 0.8);   // Right lip
+            
+            // Calculate the real gold value based on the path
+            const realGoldVal = ((chinCenter + lipLeft + lipRight) / 3) * 1800;
+            const realGold = `$${realGoldVal.toFixed(2)}`;
+
+            return { value, age, adValue, breakdown, dob, dodBirth, dodCurrent, land, cryptoTotal, cryptoBreakdown, realGold };
+        }
+    });
+</script>
+
+</body>
+</html>
